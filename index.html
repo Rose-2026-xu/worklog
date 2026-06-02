@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>随时记</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ========== 墨纸美学 ========== */
+:root {
+  --ink: #3d3040;
+  --ink-light: #6b5c70;
+  --ink-muted: #a89dac;
+  --paper: #fef0f3;
+  --paper-warm: #fce4ea;
+  --paper-card: #ffffff;
+  --accent: #e8607c;
+  --accent-soft: rgba(232,96,124,0.08);
+  --accent-hover: #d44e6a;
+  --pending: #d4913a;
+  --pending-soft: rgba(212,145,58,0.10);
+  --completed: #4a9e6e;
+  --completed-soft: rgba(74,158,110,0.10);
+  --danger: #e8607c;
+  --danger-soft: rgba(232,96,124,0.10);
+  --divider: rgba(120,60,80,0.07);
+  --shadow-sm: 0 1px 2px rgba(120,60,80,0.05);
+  --shadow-md: 0 2px 8px rgba(120,60,80,0.08);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --fab-size: 54px;
+  --font-display: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f0e4e8;
+    --ink-light: #c4b0b8;
+    --ink-muted: #8a7680;
+    --paper: #1e1418;
+    --paper-warm: #2a1e24;
+    --paper-card: #34262e;
+    --accent: #f07090;
+    --accent-soft: rgba(240,112,144,0.12);
+    --accent-hover: #ff88a4;
+    --pending: #e8b050;
+    --pending-soft: rgba(232,176,80,0.12);
+    --completed: #6cc890;
+    --completed-soft: rgba(108,200,144,0.12);
+    --danger: #f07090;
+    --danger-soft: rgba(240,112,144,0.12);
+    --divider: rgba(255,200,210,0.06);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.25);
+  }
+}
+
+/* ========== 全局 ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* 微妙纸张纹理 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ========== 布局 ========== */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== Header ========== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--paper);
+  padding: 20px 24px 0;
+}
+
+.header-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--ink);
+  position: relative;
+}
+
+.header-title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+  border-radius: 1px;
+}
+
+.header-date {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========== 筛选标签 ========== */
+.filter-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--paper-warm);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  margin-bottom: 14px;
+}
+
+.filter-tab {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-body);
+}
+
+.filter-tab.active {
+  background: var(--paper-card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+.filter-tab:not(.active):active {
+  opacity: 0.6;
+}
+
+/* ========== 自定义日期 ========== */
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-light);
+  padding-bottom: 10px;
+}
+
+.date-filter label {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.date-filter input[type="date"] {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--paper-card);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.date-filter input[type="date"]:focus {
+  border-color: var(--accent);
+}
+
+.date-filter .date-sep {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+}
+
+/* ========== 主内容 ========== */
+.main {
+  flex: 1;
+  padding: 0 24px 100px;
+  overflow-y: auto;
+}
+
+/* ========== 统计条 ========== */
+.stats-bar {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0 14px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stat-chip.pending {
+  background: var(--pending-soft);
+  color: var(--pending);
+}
+
+.stat-chip.completed {
+  background: var(--completed-soft);
+  color: var(--completed);
+}
+
+.stat-chip .stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ========== 日期分组 ========== */
+.date-group {
+  margin-bottom: 22px;
+}
+
+.date-group-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-light);
+  margin-bottom: 10px;
+  padding-left: 12px;
+  position: relative;
+}
+
+.date-group-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 3px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ========== 工作项 ========== */
+.item-card {
+  background: var(--paper-card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--divider);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow 0.2s;
+}
+
+.item-card:active {
+  box-shadow: var(--shadow-md);
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 状态圆圈 */
+.item-status {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--pending);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 2px;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.item-status.completed {
+  background: var(--completed);
+  border-color: var(--completed);
+}
+
+.item-status.completed::after {
+  content: "";
+  width: 7px;
+  height: 4px;
+  border-left: 1.8px solid #fff;
+  border-bottom: 1.8px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+.item-status:active {
+  transform: scale(0.82);
+}
+
+/* 内容 */
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-text {
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+  transition: all 0.3s;
+  color: var(--ink);
+}
+
+.item-text.completed {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-muted);
+  color: var(--ink-muted);
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.item-time {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.item-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  opacity: 0;
+}
+
+.item-card:hover .item-delete,
+.item-card:active .item-delete,
+.item-delete:focus {
+  opacity: 1;
+}
+
+.item-delete:active {
+  background: var(--danger-soft);
+  color: var(--danger);
+  transform: scale(0.88);
+}
+
+.item-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 移动端始终显示删除按钮 */
+@media (hover: none) {
+  .item-delete {
+    opacity: 0.5;
+  }
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.empty-brush {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.35;
+  animation: brushFloat 3s ease-in-out infinite;
+}
+
+@keyframes brushFloat {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-6px) rotate(5deg); }
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-light);
+  margin-bottom: 6px;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* ========== FAB ========== */
+.fab {
+  position: fixed;
+  bottom: 32px;
+  right: calc(50% - 210px);
+  width: var(--fab-size);
+  height: var(--fab-size);
+  border-radius: 16px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(232,96,124,0.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+  z-index: 20;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+@media (max-width: 480px) {
+  .fab { right: 24px; }
+}
+
+.fab:active {
+  transform: scale(0.92) rotate(-90deg);
+  box-shadow: 0 2px 8px rgba(192,83,58,0.25);
+}
+
+.fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ========== 遮罩 ========== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 30;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========== Modal ========== */
+.modal {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--paper-card);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 40;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.modal.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.modal-handle {
+  width: 32px;
+  height: 4px;
+  background: var(--divider);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+}
+
+.modal-date-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.modal-date-row label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-light);
+  flex-shrink: 0;
+}
+
+.modal-date-row input[type="date"] {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--paper-warm);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-date-row input[type="date"]:focus {
+  border-color: var(--accent);
+}
+
+.modal textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px 14px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--paper-warm);
+  color: var(--ink);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal textarea:focus {
+  border-color: var(--accent);
+}
+
+.modal textarea::placeholder {
+  color: var(--ink-muted);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-body);
+}
+
+.btn-cancel {
+  background: var(--paper-warm);
+  color: var(--ink-light);
+}
+
+.btn-cancel:active { opacity: 0.6; }
+
+.btn-confirm {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-confirm:active { opacity: 0.85; }
+
+/* ========== 确认弹窗 ========== */
+.confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: calc(100% - 48px);
+  max-width: 300px;
+  background: var(--paper-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.confirm-modal.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.confirm-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 14px;
+  background: var(--danger-soft);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+}
+
+.confirm-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.confirm-text {
+  font-size: 15px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:active { opacity: 0.85; }
+
+/* ========== 周五提醒横幅 ========== */
+.reminder-banner {
+  background: var(--pending-soft);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: fadeSlideIn 0.4s ease-out;
+}
+
+.reminder-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--pending);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.reminder-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reminder-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pending);
+  margin-bottom: 2px;
+}
+
+.reminder-desc {
+  font-size: 12px;
+  color: var(--ink-light);
+  line-height: 1.4;
+}
+
+.reminder-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.reminder-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ========== 卡通浮动装饰 ========== */
+.decorations {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.deco {
+  position: absolute;
+  opacity: 0.13;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .deco { opacity: 0.07; }
+}
+
+/* 星星 */
+.deco-star {
+  width: 22px;
+  height: 22px;
+  animation-name: twinkle;
+}
+
+.deco-star svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--accent);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.22; transform: scale(1.2) rotate(20deg); }
+}
+
+/* 云朵 */
+.deco-cloud {
+  width: 50px;
+  height: 30px;
+  animation-name: floatCloud;
+}
+
+.deco-cloud svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--ink-muted);
+  opacity: 0.5;
+}
+
+@keyframes floatCloud {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(15px) translateY(-5px); }
+}
+
+/* 爱心 */
+.deco-heart {
+  width: 18px;
+  height: 18px;
+  animation-name: heartBeat;
+}
+
+.deco-heart svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--accent);
+}
+
+@keyframes heartBeat {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  25% { opacity: 0.2; transform: scale(1.15); }
+  50% { opacity: 0.12; transform: scale(1); }
+  75% { opacity: 0.2; transform: scale(1.1); }
+}
+
+/* 小花 */
+.deco-flower {
+  width: 20px;
+  height: 20px;
+  animation-name: swayFlower;
+}
+
+.deco-flower svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--pending);
+}
+
+@keyframes swayFlower {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+
+/* ========== 每日祝福 ========== */
+.header-blessing {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-top: 4px;
+  opacity: 0.85;
+  animation: blessingFadeIn 1s ease-out;
+}
+
+@keyframes blessingFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 0.85; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- 卡通装饰层 -->
+<div class="decorations" id="decoLayer"></div>
+
+<div class="app">
+  <!-- 顶部栏 -->
+  <header class="header">
+    <div class="header-top">
+      <div>
+        <h1 class="header-title">随时记</h1>
+        <div class="header-blessing" id="headerBlessing"></div>
+      </div>
+      <span class="header-date" id="headerDate"></span>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="today">今天</button>
+      <button class="filter-tab" data-filter="week">本周</button>
+      <button class="filter-tab" data-filter="all">全部</button>
+      <button class="filter-tab" data-filter="custom">自定义</button>
+    </div>
+
+    <div class="date-filter" id="customDateFilter" style="display:none;">
+      <label>从</label>
+      <input type="date" id="startDate">
+      <span class="date-sep">至</span>
+      <input type="date" id="endDate">
+    </div>
+  </header>
+
+  <main class="main" id="mainContent"></main>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" aria-label="添加工作项">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- 遮罩 -->
+<div class="overlay" id="overlay"></div>
+
+<!-- 添加 Modal -->
+<div class="modal" id="addModal">
+  <div class="modal-handle"></div>
+  <div class="modal-title">记录工作</div>
+  <div class="modal-date-row">
+    <label for="itemDate">日期</label>
+    <input type="date" id="itemDate">
+  </div>
+  <textarea id="itemInput" placeholder="做了什么？"></textarea>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" id="cancelBtn">取消</button>
+    <button class="btn btn-confirm" id="confirmBtn">添加</button>
+  </div>
+</div>
+
+<!-- 删除确认 -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+  </div>
+  <div class="confirm-text">确定删除这条记录吗？</div>
+  <div class="confirm-actions">
+    <button class="btn btn-cancel" id="confirmCancel">取消</button>
+    <button class="btn btn-danger" id="confirmDelete">删除</button>
+  </div>
+</div>
+
+<script>
+/* ========== 数据管理（API 模式，多设备同步） ========== */
+let _itemsCache = null;
+
+async function loadItems() {
+  try {
+    const res = await fetch('/api/items');
+    if (!res.ok) throw new Error('请求失败');
+    _itemsCache = await res.json();
+    return _itemsCache;
+  } catch {
+    return _itemsCache || [];
+  }
+}
+
+async function addItem(content, date) {
+  const now = new Date();
+  const item = {
+    id: String(Date.now()),
+    content: content.trim(),
+    status: 'pending',
+    createdAt: now.getTime(),
+    date: date || formatDateStr(now)
+  };
+  await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item)
+  });
+  return item;
+}
+
+async function toggleStatus(id) {
+  const res = await fetch(`/api/items/${id}`, { method: 'PATCH' });
+  return await res.json();
+}
+
+async function deleteItem(id) {
+  await fetch(`/api/items/${id}`, { method: 'DELETE' });
+}
+
+/* ========== 日期工具 ========== */
+function formatDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+function formatGroupTitle(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const today = new Date();
+  const todayStr = formatDateStr(today);
+  const yesterdayStr = formatDateStr(new Date(today.getTime() - 86400000));
+
+  let prefix = '';
+  if (dateStr === todayStr) prefix = '今天 · ';
+  else if (dateStr === yesterdayStr) prefix = '昨天 · ';
+
+  return `${prefix}${m}月${d}日 ${WEEKDAYS[date.getDay()]}`;
+}
+
+function formatTime(timestamp) {
+  const d = new Date(timestamp);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { start: monday, end: sunday };
+}
+
+function formatHeaderDate() {
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  return `${m}月${d}日 ${WEEKDAYS[now.getDay()]}`;
+}
+
+/* ========== 垃圾桶 SVG ========== */
+const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+
+/* ========== 筛选逻辑 ========== */
+let currentFilter = 'today';
+
+function filterItems(items) {
+  const now = new Date();
+  const todayStr = formatDateStr(now);
+
+  if (currentFilter === 'today') {
+    return items.filter(i => i.date === todayStr);
+  }
+
+  if (currentFilter === 'week') {
+    const { start, end } = getWeekRange();
+    return items.filter(i => {
+      const d = new Date(i.date);
+      return d >= start && d <= end;
+    });
+  }
+
+  if (currentFilter === 'custom') {
+    const startVal = document.getElementById('startDate').value;
+    const endVal = document.getElementById('endDate').value;
+    if (!startVal && !endVal) return items;
+    return items.filter(i => {
+      if (startVal && i.date < startVal) return false;
+      if (endVal && i.date > endVal) return false;
+      return true;
+    });
+  }
+
+  return items;
+}
+
+/* ========== 周五提醒 ========== */
+function isFriday() {
+  return new Date().getDay() === 5;
+}
+
+function shouldShowReminder() {
+  const dismissed = localStorage.getItem('worklog_reminder_dismissed');
+  const today = formatDateStr(new Date());
+  return isFriday() && dismissed !== today;
+}
+
+function dismissReminder() {
+  localStorage.setItem('worklog_reminder_dismissed', formatDateStr(new Date()));
+}
+
+function renderReminder(pendingCount) {
+  if (!shouldShowReminder() || pendingCount === 0) return '';
+  return `
+    <div class="reminder-banner" id="reminderBanner">
+      <div class="reminder-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div class="reminder-body">
+        <div class="reminder-title">周五提醒</div>
+        <div class="reminder-desc">本周还有 ${pendingCount} 项待完成工作，记得收尾哦</div>
+      </div>
+      <button class="reminder-close" id="reminderClose" aria-label="关闭提醒">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+/* ========== 渲染 ========== */
+async function render() {
+  const main = document.getElementById('mainContent');
+  const allItems = await loadItems();
+  const items = filterItems(allItems);
+
+  // 周五提醒 - 统计本周待完成
+  let weekPending = 0;
+  if (shouldShowReminder()) {
+    const { start, end } = getWeekRange();
+    weekPending = allItems.filter(i => {
+      if (i.status !== 'pending') return false;
+      const d = new Date(i.date);
+      return d >= start && d <= end;
+    }).length;
+  }
+
+  if (items.length === 0) {
+    main.innerHTML = `
+      ${renderReminder(weekPending)}
+      <div class="empty-state">
+        <div class="empty-brush">✒</div>
+        <div class="empty-title">暂无记录</div>
+        <div class="empty-desc">点击右下角按钮，记录今天的工作</div>
+      </div>
+    `;
+    bindReminderClose();
+    return;
+  }
+
+  const groups = {};
+  items.forEach(item => {
+    if (!groups[item.date]) groups[item.date] = [];
+    groups[item.date].push(item);
+  });
+
+  const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+  const pendingCount = items.filter(i => i.status === 'pending').length;
+  const completedCount = items.filter(i => i.status === 'completed').length;
+
+  let html = renderReminder(weekPending);
+
+  html += `
+    <div class="stats-bar">
+      <span class="stat-chip pending"><span class="stat-dot"></span>待完成 ${pendingCount}</span>
+      <span class="stat-chip completed"><span class="stat-dot"></span>已完成 ${completedCount}</span>
+    </div>
+  `;
+
+  sortedDates.forEach(dateStr => {
+    html += `
+      <div class="date-group">
+        <div class="date-group-title">${formatGroupTitle(dateStr)}</div>
+        ${groups[dateStr].map(item => renderItem(item)).join('')}
+      </div>
+    `;
+  });
+
+  main.innerHTML = html;
+
+  bindReminderClose();
+
+  main.querySelectorAll('.item-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await toggleStatus(btn.dataset.id);
+      render();
+    });
+  });
+
+  main.querySelectorAll('.item-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showDeleteConfirm(btn.dataset.id);
+    });
+  });
+}
+
+function renderItem(item) {
+  const isCompleted = item.status === 'completed';
+  return `
+    <div class="item-card" data-id="${item.id}">
+      <button class="item-status ${isCompleted ? 'completed' : ''}" data-id="${item.id}" aria-label="切换状态"></button>
+      <div class="item-content">
+        <div class="item-text ${isCompleted ? 'completed' : ''}">${escapeHtml(item.content)}</div>
+        <div class="item-meta">
+          <span class="item-time">${formatTime(item.createdAt)}</span>
+          <button class="item-delete" data-id="${item.id}" aria-label="删除">${TRASH_SVG}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindReminderClose() {
+  const closeBtn = document.getElementById('reminderClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      dismissReminder();
+      const banner = document.getElementById('reminderBanner');
+      if (banner) {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-10px)';
+        banner.style.transition = 'all 0.3s';
+        setTimeout(() => banner.remove(), 300);
+      }
+    });
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/* ========== Modal 控制 ========== */
+const overlay = document.getElementById('overlay');
+const addModal = document.getElementById('addModal');
+const confirmModal = document.getElementById('confirmModal');
+const itemInput = document.getElementById('itemInput');
+let deleteTargetId = null;
+
+function showAddModal() {
+  document.getElementById('itemDate').value = formatDateStr(new Date());
+  overlay.classList.add('show');
+  addModal.classList.add('show');
+  setTimeout(() => itemInput.focus(), 300);
+}
+
+function hideAddModal() {
+  overlay.classList.remove('show');
+  addModal.classList.remove('show');
+  itemInput.value = '';
+  document.getElementById('itemDate').value = '';
+}
+
+function showDeleteConfirm(id) {
+  deleteTargetId = id;
+  overlay.classList.add('show');
+  confirmModal.classList.add('show');
+}
+
+function hideDeleteConfirm() {
+  deleteTargetId = null;
+  overlay.classList.remove('show');
+  confirmModal.classList.remove('show');
+}
+
+/* ========== 筛选标签 ========== */
+const filterTabs = document.querySelectorAll('.filter-tab');
+const customDateFilter = document.getElementById('customDateFilter');
+
+filterTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    filterTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    customDateFilter.style.display = currentFilter === 'custom' ? 'flex' : 'none';
+    render();
+  });
+});
+
+document.getElementById('startDate').addEventListener('change', render);
+document.getElementById('endDate').addEventListener('change', render);
+
+/* ========== 事件绑定 ========== */
+document.getElementById('fabBtn').addEventListener('click', showAddModal);
+document.getElementById('cancelBtn').addEventListener('click', hideAddModal);
+document.getElementById('overlay').addEventListener('click', () => {
+  hideAddModal();
+  hideDeleteConfirm();
+});
+
+document.getElementById('confirmBtn').addEventListener('click', async () => {
+  const content = itemInput.value.trim();
+  if (!content) { itemInput.focus(); return; }
+  const date = document.getElementById('itemDate').value || formatDateStr(new Date());
+  await addItem(content, date);
+  hideAddModal();
+  render();
+});
+
+itemInput.addEventListener('keydown', async (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    const content = itemInput.value.trim();
+    if (content) {
+      const date = document.getElementById('itemDate').value || formatDateStr(new Date());
+      await addItem(content, date);
+      hideAddModal();
+      render();
+    }
+  }
+});
+
+document.getElementById('confirmCancel').addEventListener('click', hideDeleteConfirm);
+document.getElementById('confirmDelete').addEventListener('click', async () => {
+  if (deleteTargetId) {
+    await deleteItem(deleteTargetId);
+    hideDeleteConfirm();
+    render();
+  }
+});
+
+/* ========== 初始化 ========== */
+document.getElementById('headerDate').textContent = formatHeaderDate();
+
+// 每日祝福
+const BLESSINGS = [
+  '今天也要元气满满哦 🌸',
+  '每一天都是新的开始 ✨',
+  '你比想象中更厉害 💪',
+  '保持热爱，奔赴山海 🌊',
+  '慢慢来，比较快 🐢',
+  '今天也辛苦了，你很棒 🌟',
+  '生活明朗，万物可爱 ☀️',
+  '所有努力终将开花 🌷',
+  '愿今天一切顺利 🍀',
+  '做个快乐的打工人 😄',
+  '好运正在派件中 📦',
+  '今天的目标：开心 🎯',
+  '你值得世间所有美好 💕',
+  '认真生活的你超好看 😎',
+  '好事正在发生 🌈',
+  '今日份的加油已送达 ⛽',
+  '别急，最好的都在路上 🚀',
+  '你的努力不会白费 🌻',
+  '微笑是最美的装饰 😊',
+  '今天又是充满希望的一天 🌅',
+  '别忘了给自己一个拥抱 🤗',
+  '每一个小进步都值得庆祝 🎉',
+  '你已经在变得更好了 🌿',
+  '此刻即是最好的时光 ⏳',
+  '心怀期待，好事自然来 🌠',
+  '今天也请温柔地对待自己 🧸',
+  '不必完美，真实就好 💎',
+  '你的坚持终将闪闪发光 ✨',
+  '用力活着，才能看到光 💫',
+  '简简单单也是一种幸福 🍃',
+  '每一天都是限量版 🎀',
+];
+
+function getDailyBlessing() {
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+  return BLESSINGS[dayOfYear % BLESSINGS.length];
+}
+
+document.getElementById('headerBlessing').textContent = getDailyBlessing();
+
+// 生成浮动卡通装饰
+function spawnDecorations() {
+  const layer = document.getElementById('decoLayer');
+  const STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>';
+  const CLOUD_SVG = '<svg viewBox="0 0 64 38"><path d="M50 30H14a14 14 0 0 1-.5-28A16 16 0 0 1 44 8a12 12 0 0 1 6 22z" opacity="0.5"/></svg>';
+  const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+  const FLOWER_SVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="6" rx="2.5" ry="3.5"/><ellipse cx="12" cy="18" rx="2.5" ry="3.5"/><ellipse cx="6" cy="12" rx="3.5" ry="2.5"/><ellipse cx="18" cy="12" rx="3.5" ry="2.5"/><ellipse cx="8" cy="8" rx="2.5" ry="3.5" transform="rotate(-45 8 8)"/><ellipse cx="16" cy="16" rx="2.5" ry="3.5" transform="rotate(-45 16 16)"/><ellipse cx="16" cy="8" rx="2.5" ry="3.5" transform="rotate(45 16 8)"/><ellipse cx="8" cy="16" rx="2.5" ry="3.5" transform="rotate(45 8 16)"/></svg>';
+
+  const items = [
+    { type: 'star', svg: STAR_SVG, cls: 'deco-star' },
+    { type: 'cloud', svg: CLOUD_SVG, cls: 'deco-cloud' },
+    { type: 'heart', svg: HEART_SVG, cls: 'deco-heart' },
+    { type: 'flower', svg: FLOWER_SVG, cls: 'deco-flower' },
+  ];
+
+  // 生成 10 个随机装饰
+  for (let i = 0; i < 10; i++) {
+    const item = items[Math.floor(Math.random() * items.length)];
+    const el = document.createElement('div');
+    el.className = `deco ${item.cls}`;
+    el.innerHTML = item.svg;
+    el.style.left = Math.random() * 90 + 2 + '%';
+    el.style.top = Math.random() * 85 + 5 + '%';
+    el.style.animationDuration = (3 + Math.random() * 4).toFixed(1) + 's';
+    el.style.animationDelay = (Math.random() * 3).toFixed(1) + 's';
+    // 随机翻转
+    if (Math.random() > 0.5) el.style.transform = 'scaleX(-1)';
+    layer.appendChild(el);
+  }
+}
+
+spawnDecorations();
+
+render();
+</script>
+
+</body>
+</html>

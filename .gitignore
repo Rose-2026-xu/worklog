@@ -1,0 +1,5 @@
+node_modules/
+worklog.db
+worklog.db.json
+worklog.db-wal
+worklog.db-shm
