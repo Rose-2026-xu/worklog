@@ -5,13 +5,15 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// 静态文件目录
+const PUBLIC_DIR = path.join(__dirname);
+
 // 中间件
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(PUBLIC_DIR));
 
 // ========== 数据存储 ==========
-// 本地用 worklog.db.json，Render 持久化磁盘用 /data/worklog.db.json
-const DB_PATH = fs.existsSync('/data') ? '/data/worklog.db.json' : path.join(__dirname, 'worklog.db.json');
+const DB_PATH = path.join(__dirname, 'worklog.db.json');
 
 function loadItems() {
   try {
@@ -69,11 +71,18 @@ app.delete('/api/items/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// 前端页面
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// 所有非 API 路由都返回 index.html（确保 SPA 路由正常）
+app.get('*', (req, res) => {
+  const htmlPath = path.join(PUBLIC_DIR, 'index.html');
+  if (fs.existsSync(htmlPath)) {
+    res.sendFile(htmlPath);
+  } else {
+    res.status(404).send('Page not found');
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ 随时记服务已启动: http://localhost:${PORT}`);
+  console.log(`📁 静态目录: ${PUBLIC_DIR}`);
+  console.log(`📄 index.html 存在: ${fs.existsSync(path.join(PUBLIC_DIR, 'index.html'))}`);
 });
