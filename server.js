@@ -10,13 +10,17 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // ========== 数据库连接 ==========
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-// 本地开发无 DATABASE_URL 时降级到 JSON 文件
 const USE_DB = !!process.env.DATABASE_URL;
+let pool;
+
+if (USE_DB) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false
+  });
+}
+
+// 本地降级用 JSON 文件
 const fs = require('fs');
 const DB_PATH = path.join(__dirname, 'worklog.db.json');
 
@@ -41,7 +45,7 @@ async function initDB() {
   `);
 }
 
-// ========== 通用数据操作（自动适配数据库/本地） ==========
+// ========== 通用数据操作 ==========
 
 async function loadItems() {
   if (!USE_DB) return loadItemsLocal();
@@ -134,9 +138,11 @@ app.delete('/api/items/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// 所有非 API 路由返回 index.html
-app.get('/{*path}', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// SPA 路由
+app.get('/{*splat}', (req, res) => {
+  const htmlPath = path.join(__dirname, 'index.html');
+  if (fs.existsSync(htmlPath)) res.sendFile(htmlPath);
+  else res.status(404).send('Not found');
 });
 
 // 启动
