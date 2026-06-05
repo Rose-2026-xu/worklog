@@ -1046,7 +1046,7 @@ function formatGroupTitle(dateStr) {
 }
 
 function formatTime(timestamp) {
-  const d = new Date(timestamp);
+  const d = new Date(Number(timestamp));
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
