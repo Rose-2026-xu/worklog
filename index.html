@@ -1005,16 +1005,16 @@ async function addItem(content, date) {
 }
 
 async function toggleStatus(id) {
-  const res = await fetch(`/api/items?id=${id}`, { method: 'PATCH' });
+  const res = await fetch(`/api/items/${id}`, { method: 'PATCH' });
   return await res.json();
 }
 
 async function deleteItem(id) {
-  await fetch(`/api/items?id=${id}`, { method: 'DELETE' });
+  await fetch(`/api/items/${id}`, { method: 'DELETE' });
 }
 
 async function updateItem(id, content, date) {
-  await fetch(`/api/items?id=${id}`, {
+  await fetch(`/api/items/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content, date })
