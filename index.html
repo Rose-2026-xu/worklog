@@ -177,6 +177,56 @@ body::before {
   opacity: 0.6;
 }
 
+/* ========== 状态筛选按钮 ========== */
+.status-filter-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.status-filter-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--divider);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-body);
+}
+
+.status-filter-tab .status-filter-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.status-filter-tab.active[data-filter="pending-all"] {
+  border-color: var(--pending);
+  background: color-mix(in srgb, var(--pending) 10%, transparent);
+  color: var(--pending);
+  font-weight: 600;
+}
+
+.status-filter-tab.active[data-filter="completed-all"] {
+  border-color: var(--completed);
+  background: color-mix(in srgb, var(--completed) 10%, transparent);
+  color: var(--completed);
+  font-weight: 600;
+}
+
+.status-filter-tab:not(.active):active {
+  opacity: 0.6;
+}
+
 /* ========== 自定义日期 ========== */
 .date-filter {
   display: flex;
@@ -911,6 +961,17 @@ body::before {
       <button class="filter-tab" data-filter="custom">自定义</button>
     </div>
 
+    <div class="status-filter-tabs">
+      <button class="status-filter-tab" data-filter="pending-all">
+        <svg class="status-filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/></svg>
+        全部待办
+      </button>
+      <button class="status-filter-tab" data-filter="completed-all">
+        <svg class="status-filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        全部已办
+      </button>
+    </div>
+
     <div class="date-filter" id="customDateFilter" style="display:none;">
       <label>从</label>
       <input type="date" id="startDate">
@@ -1106,6 +1167,14 @@ function filterItems(items) {
     });
   }
 
+  if (currentFilter === 'pending-all') {
+    return items.filter(i => i.status === 'pending' && i.date <= todayStr);
+  }
+
+  if (currentFilter === 'completed-all') {
+    return items.filter(i => i.status === 'completed' && i.date <= todayStr);
+  }
+
   return items;
 }
 
@@ -1160,12 +1229,21 @@ async function render() {
   }
 
   if (items.length === 0) {
+    let emptyTitle = '暂无记录';
+    let emptyDesc = '点击右下角按钮，记录今天的工作';
+    if (currentFilter === 'pending-all') {
+      emptyTitle = '没有待办事项';
+      emptyDesc = '所有事情都已完成，太棒了 🎉';
+    } else if (currentFilter === 'completed-all') {
+      emptyTitle = '没有已办事项';
+      emptyDesc = '还没有完成的工作记录';
+    }
     main.innerHTML = `
       ${renderReminder(weekPending)}
       <div class="empty-state">
-        <div class="empty-brush">✒</div>
-        <div class="empty-title">暂无记录</div>
-        <div class="empty-desc">点击右下角按钮，记录今天的工作</div>
+        <div class="empty-brush">${currentFilter === 'pending-all' ? '✅' : currentFilter === 'completed-all' ? '📝' : '✒'}</div>
+        <div class="empty-title">${emptyTitle}</div>
+        <div class="empty-desc">${emptyDesc}</div>
       </div>
     `;
     bindReminderClose();
@@ -1329,14 +1407,27 @@ function hideEditModal() {
 
 /* ========== 筛选标签 ========== */
 const filterTabs = document.querySelectorAll('.filter-tab');
+const statusFilterTabs = document.querySelectorAll('.status-filter-tab');
 const customDateFilter = document.getElementById('customDateFilter');
 
 filterTabs.forEach(tab => {
   tab.addEventListener('click', () => {
     filterTabs.forEach(t => t.classList.remove('active'));
+    statusFilterTabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentFilter = tab.dataset.filter;
     customDateFilter.style.display = currentFilter === 'custom' ? 'flex' : 'none';
+    render();
+  });
+});
+
+statusFilterTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    filterTabs.forEach(t => t.classList.remove('active'));
+    statusFilterTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    customDateFilter.style.display = 'none';
     render();
   });
 });
